@@ -1,1 +1,129 @@
-SS
+this is my peer assigment of practical machine learning. I used an random forest algorithm for the data set of Human Activity Recognition. FIRST STEEP: GEETING DATA SECOND STEEP: CLEANING DATA THIRD STEEP: APPLY RANDOM FOREST ALGORITHM FOURTH STEEP: PERFORMANCE AND IMPROVE ALGORITHM FIFTH STEEP: PLOT RESULTS
+
+#this is my peer assigment of practical machine learning.
+# I used an random forest algorithm for the data set of Human Activity Recognition.
+
+
+library(caret)
+## Warning: package 'caret' was built under R version 3.1.2
+## Loading required package: lattice
+## Loading required package: ggplot2
+## Warning: package 'ggplot2' was built under R version 3.1.2
+library(rattle)
+## Warning: package 'rattle' was built under R version 3.1.2
+## Rattle: A free graphical interface for data mining with R.
+## Versión 3.3.0 Copyright (c) 2006-2014 Togaware Pty Ltd.
+## Escriba 'rattle()' para agitar, sacudir y  rotar sus datos.
+library(rpart)
+## Warning: package 'rpart' was built under R version 3.1.2
+library(randomForest)
+## Warning: package 'randomForest' was built under R version 3.1.2
+## randomForest 4.6-10
+## Type rfNews() to see new features/changes/bug fixes.
+library(e1071)
+## Warning: package 'e1071' was built under R version 3.1.2
+#Set seed for research reproduceability 
+set.seed(12345)
+
+
+########Getting the data
+
+trainUrl <- "http://d396qusza40orc.cloudfront.net/predmachlearn/pml-training.csv"
+testUrl <- "http://d396qusza40orc.cloudfront.net/predmachlearn/pml-testing.csv"
+
+
+#load and clean the data 
+
+training <- read.csv(url(trainUrl), na.strings=c("NA","#DIV/0!",""))
+testing <- read.csv(url(testUrl), na.strings=c("NA","#DIV/0!",""))
+
+
+#split data set in to training and testing
+
+training       <- training[,-c(4,8,10)]
+test           <- testing[,-c(4,8,10)]
+
+trainingIndex  <- createDataPartition(training$classe, p=.70, list=FALSE)
+trainingtrain <- training[ trainingIndex,]
+trainingtest  <- training[-trainingIndex,]
+rm.na.cols     <- function(x) { x[ , colSums( is.na(x) ) < nrow(x) ] }
+trainingtrain <- rm.na.cols(trainingtrain)
+trainingtest  <- rm.na.cols(trainingtest)
+complete       <- function(x) {x[,sapply(x, function(y) !any(is.na(y)))] }
+incompl        <- function(x) {names( x[,sapply(x, function(y) any(is.na(y)))] ) }
+trtr.na.var    <- incompl(trainingtrain)
+trts.na.var    <- incompl(trainingtest)
+trainingtrain <- complete(trainingtrain)
+trainingtest  <- complete(trainingtest)
+
+#apply randomforest algorith
+random.forest <- train(trainingtrain[,-59],
+                       trainingtrain$classe,
+                       tuneGrid=data.frame(mtry=3),
+                       trControl=trainControl(method="none")
+)
+
+#algorithm performance 
+summary(random.forest)
+##                 Length Class      Mode     
+## call                4  -none-     call     
+## type                1  -none-     character
+## predicted       13737  factor     numeric  
+## err.rate         3000  -none-     numeric  
+## confusion          30  -none-     numeric  
+## votes           68685  matrix     numeric  
+## oob.times       13737  -none-     numeric  
+## classes             5  -none-     character
+## importance         57  -none-     numeric  
+## importanceSD        0  -none-     NULL     
+## localImportance     0  -none-     NULL     
+## proximity           0  -none-     NULL     
+## ntree               1  -none-     numeric  
+## mtry                1  -none-     numeric  
+## forest             14  -none-     list     
+## y               13737  factor     numeric  
+## test                0  -none-     NULL     
+## inbag               0  -none-     NULL     
+## xNames             57  -none-     character
+## problemType         1  -none-     character
+## tuneValue           1  data.frame list     
+## obsLevels           5  -none-     character
+confusionMatrix(predict(random.forest,
+                        newdata=trainingtest[,-59]),
+                trainingtest$classe
+)
+## Confusion Matrix and Statistics
+## 
+##           Reference
+## Prediction    A    B    C    D    E
+##          A 1674    0    0    0    0
+##          B    0 1139    0    0    0
+##          C    0    0 1026    0    0
+##          D    0    0    0  964    0
+##          E    0    0    0    0 1082
+## 
+## Overall Statistics
+##                                      
+##                Accuracy : 1          
+##                  95% CI : (0.9994, 1)
+##     No Information Rate : 0.2845     
+##     P-Value [Acc > NIR] : < 2.2e-16  
+##                                      
+##                   Kappa : 1          
+##  Mcnemar's Test P-Value : NA         
+## 
+## Statistics by Class:
+## 
+##                      Class: A Class: B Class: C Class: D Class: E
+## Sensitivity            1.0000   1.0000   1.0000   1.0000   1.0000
+## Specificity            1.0000   1.0000   1.0000   1.0000   1.0000
+## Pos Pred Value         1.0000   1.0000   1.0000   1.0000   1.0000
+## Neg Pred Value         1.0000   1.0000   1.0000   1.0000   1.0000
+## Prevalence             0.2845   0.1935   0.1743   0.1638   0.1839
+## Detection Rate         0.2845   0.1935   0.1743   0.1638   0.1839
+## Detection Prevalence   0.2845   0.1935   0.1743   0.1638   0.1839
+## Balanced Accuracy      1.0000   1.0000   1.0000   1.0000   1.0000
+PLOT RANDOM FOREST
+
+plot( varImp(random.forest) )
+
